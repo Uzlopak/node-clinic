@@ -15,7 +15,7 @@ function fixture () {
         argv: ['bench.js', '$' + '{iterations}'],
         cwd: '/workspace',
         env_allowlist: [],
-        profilers: ['clinic-flame'],
+        profilers: ['clinic-flame', 'clinic-deoptigate'],
         limits: { wall_clock_ms: 1000, cpu_ms: 1000, memory_mb: 64, artifact_mb: 4 },
         network: 'disabled',
         input_mounts: [],

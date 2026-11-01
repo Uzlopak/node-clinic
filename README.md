@@ -111,12 +111,14 @@ clinic doctor --help
 clinic bubbleprof --help
 clinic flame --help
 clinic heapprofiler --help
+clinic deoptigate --help
 ```
 
 - The `doctor` functionality is provided by [Clinic.js Doctor](https://github.com/clinicjs/node-clinic-doctor).
 - The `bubbleprof` functionality is provided by [Clinic.js Bubbleprof](https://github.com/clinicjs/node-clinic-bubbleprof).
 - The `flame` functionality is provided by [Clinic.js Flame](https://github.com/clinicjs/node-clinic-flame).
 - The `heapprofiler` functionality is provided by [Clinic.js Heap Profiler](https://github.com/clinicjs/node-clinic-heap-profiler).
+- The `deoptigate` functionality is provided by [Clinic.js Deoptigate](https://www.npmjs.com/package/@clinic/deoptigate).
 
 ## Flags
 
@@ -140,6 +142,7 @@ Each of the tools has a programmable interface which you can read about in their
 - [Clinic.js Bubbleprof](https://github.com/clinicjs/node-clinic-bubbleprof)
 - [Clinic.js Flame](https://github.com/clinicjs/node-clinic-flame)
 - [Clinic.js Heap Profiler](https://github.com/clinicjs/node-clinic-heap-profiler)
+- [Clinic.js Deoptigate](https://www.npmjs.com/package/@clinic/deoptigate)
 
 ## Profile a declared workload
 
@@ -150,11 +153,19 @@ Run it with Clinic Flame (the default) from that project directory:
 node /path/to/node-clinic/bin/profile-clinic.js --workload fibonacci --param iterations=10
 ```
 
-This command runs the `fibonacci` workload with Clinic Flame. Use
-`--profiler clinic-doctor`, `--profiler clinic-bubbleprof`, or
-`--profiler clinic-heapprofiler` to select another supported profiler, provided
-the workload allows it. The command writes a JSON report and saves the profile
-files in `.clinic-runs/` in your project directory.
+To run the same declared workload with Deoptigate, select it explicitly:
+
+```sh
+node /path/to/node-clinic/bin/profile-clinic.js --workload fibonacci --param iterations=10 --profiler clinic-deoptigate
+```
+
+The first command runs the `fibonacci` workload with Clinic Flame. Use `--profiler`
+with `clinic-doctor`, `clinic-bubbleprof`, `clinic-heapprofiler`, or
+`clinic-deoptigate` to select another supported profiler, provided the workload
+allows it. The command writes a JSON report and saves the profile files in
+`.clinic-runs/` in your project directory.
+Deoptigate reports deoptimization and inline-cache transition counts in the
+summary and attaches source locations to the highest-severity findings.
 The checked-in workload uses three warmups and ten unprofiled throughput
 samples before Clinic collects the profile. The report stores those samples
 and their median; compatible comparisons use a deterministic bootstrap interval
@@ -179,8 +190,8 @@ allows. For example, when `fibonacci` allows `clinic-flame`, start it with:
 ```
 
 Available profilers are `clinic-doctor`, `clinic-bubbleprof`, `clinic-flame`,
-and `clinic-heapprofiler`. The profiler must be listed for that workload in the
-project manifest.
+`clinic-heapprofiler`, and `clinic-deoptigate`. The profiler must be listed for
+that workload in the project manifest.
 
 The MCP server can show available workloads and start a profile. `start_profile_run`
 returns a queued or running run; reuse its `run_id` and `run_capability` with
@@ -245,7 +256,7 @@ keep raw Clinic artifacts local; MCP artifact access requires an explicit
 run-scoped request. Artifacts expire after 24 hours.
 
 ## Profiling In [Podman](https://podman.io/) Container
-_Applicable for `doctor`, `bubbleprof`, `flame` or `heapprofiler`_
+_Applicable for `doctor`, `bubbleprof`, `flame`, `heapprofiler` or `deoptigate`_
 
 In case you profile your application inside of container environment using [podman](https://podman.io/) (docker alternative).
 And you start profling by providing `CMD` step in the dockerfile.

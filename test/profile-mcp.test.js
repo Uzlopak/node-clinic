@@ -3,7 +3,7 @@
 const test = require('tap').test
 const { ProfileMcpServer } = require('../lib/profile-mcp')
 const { validateToolResponse } = require('../lib/profile-runtime-schemas')
-const { analyzeClinicFlame, compareReports, findingDetail } = require('../lib/profile-analyzer')
+const { analyzeClinicFlame, analyzeClinicDiagnostics, compareReports, findingDetail } = require('../lib/profile-analyzer')
 
 test('registered workloads are an immutable in-memory snapshot', async t => {
   const workloads = { fibonacci: { profilers: ['clinic-flame'], executable: 'bench.js' } }
@@ -151,6 +151,38 @@ test('findings pages stay bounded and advance after compacting an oversized find
   t.equal(second.ok, true)
   t.not(second.data.items[0].id, first.data.items[0].id)
   t.same(validateToolResponse('get_profile_findings', second), [])
+  t.end()
+})
+
+test('MCP findings pages preserve Deoptigate runtime-event confidence evidence', async t => {
+  const server = new ProfileMcpServer({
+    workloads: { smoke: { profilers: ['clinic-deoptigate'], limits: { wall_clock_ms: 1, memory_mb: 1 } } },
+    runner: { start: async () => ({ status: 'completed', runId: 'runner-deoptigate' }) }
+  })
+  const started = await server.call('start_profile_run', { workload: 'smoke' })
+  const report = analyzeClinicDiagnostics('clinic-deoptigate', {
+    locations: [{
+      kind: 'deoptimization',
+      file: 'src/app.js',
+      line: 42,
+      function_name: 'calculate',
+      reason: 'wrong map',
+      count: 12,
+      severity: 3
+    }]
+  }, { run_id: started.data.run_id, workload: 'smoke' })
+  server.reports.set(started.data.run_id, report)
+
+  const response = await server.call('get_profile_findings', {
+    run_id: started.data.run_id,
+    run_capability: started.data.run_capability
+  })
+
+  t.equal(response.ok, true)
+  t.equal(response.data.items.length, 1)
+  t.equal(response.data.items[0].evidence.confidence_basis, 'deoptigate_runtime_events')
+  t.equal(response.data.items[0].confidence, 'high')
+  t.same(validateToolResponse('get_profile_findings', response), [])
   t.end()
 })
 

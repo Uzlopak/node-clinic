@@ -196,7 +196,7 @@
             "adapter": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-v[0-9]+$"},
             "adapter_schema_version": {"type": "string", "pattern": "^[0-9]+$"},
             "sample_count": {"type": "integer", "minimum": 1},
-            "confidence_basis": {"enum": ["profiler_sample_count", "profiler_sample_count_unavailable", "doctor_issue_classification", "bubbleprof_event_sources", "heapprofiler_single_snapshot"]}
+            "confidence_basis": {"enum": ["profiler_sample_count", "profiler_sample_count_unavailable", "doctor_issue_classification", "bubbleprof_event_sources", "heapprofiler_single_snapshot", "deoptigate_runtime_events"]}
           }
         }
       }
@@ -292,6 +292,15 @@
             "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
           }
         },
+        "optimization_events": {
+          "type": "object",
+          "required": ["deoptimization_count", "inline_cache_transition_count"],
+          "additionalProperties": false,
+          "properties": {
+            "deoptimization_count": {"type": "integer", "minimum": 0},
+            "inline_cache_transition_count": {"type": "integer", "minimum": 0}
+          }
+        },
         "confidence": {"enum": ["low", "medium", "high", "unsupported"]},
         "capabilities": {
           "type": "object",
@@ -300,7 +309,8 @@
           "properties": {
             "cpu_call_tree": {"enum": ["supported", "unsupported"]},
             "event_loop_delay": {"enum": ["supported", "unsupported"]},
-            "heap_retained_delta": {"enum": ["supported", "unsupported"]}
+            "heap_retained_delta": {"enum": ["supported", "unsupported"]},
+            "optimization_events": {"enum": ["supported", "unsupported"]}
           }
         }
       }

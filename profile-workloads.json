@@ -8,7 +8,7 @@
       "argv": ["/workspace/bench/profile-fibonacci.js", "${iterations}"],
       "cwd": "/workspace",
       "env_allowlist": [],
-      "profilers": ["clinic-flame"],
+      "profilers": ["clinic-flame", "clinic-deoptigate"],
       "limits": {
         "wall_clock_ms": 120000,
         "cpu_ms": 120000,

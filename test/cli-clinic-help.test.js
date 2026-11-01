@@ -7,6 +7,7 @@ test('clinic --help', function (t) {
   cli({}, ['clinic', '--help'], function (err, stdout) {
     t.error(err)
     t.ok(/Clinic[^\w ]/.test(stdout.split('\n')[1]))
+    t.match(stdout, /clinic deoptigate --help/, 'lists the Deoptigate command')
     t.end()
   })
 })

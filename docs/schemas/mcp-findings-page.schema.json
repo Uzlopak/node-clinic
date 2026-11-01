@@ -56,7 +56,7 @@
           "properties": {
             "adapter": {"type": "string", "pattern": "^[a-z][a-z0-9-]*-v[0-9]+$"},
             "adapter_schema_version": {"type": "string", "pattern": "^[0-9]+$"},
-            "confidence_basis": {"enum": ["profiler_sample_count", "profiler_sample_count_unavailable", "doctor_issue_classification", "bubbleprof_event_sources", "heapprofiler_single_snapshot", "compacted_unavailable"]}
+            "confidence_basis": {"enum": ["profiler_sample_count", "profiler_sample_count_unavailable", "doctor_issue_classification", "bubbleprof_event_sources", "heapprofiler_single_snapshot", "deoptigate_runtime_events", "compacted_unavailable"]}
           }
         },
         "truncated": {"const": true}

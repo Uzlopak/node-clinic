@@ -1,0 +1,42 @@
+  <title>Clinic.js Deoptigate</title> - v{{version}}
+
+  <code>clinic deoptigate</code> records V8 deoptimizations and inline cache
+  state changes, then creates an interactive report for the application source.
+
+  Run it with:
+
+    <code>clinic deoptigate -- node server.js</code>
+
+  The report opens in a browser when the process exits. To collect data without
+  building the report, use:
+
+    <code>clinic deoptigate --collect-only -- node server.js</code>
+
+  Then build the report later with:
+
+    <code>clinic deoptigate --visualize-only .clinic/123.clinic-deoptigate</code>
+
+  You can use <code>--autocannon</code> to send load to the application as soon
+  as it starts listening. It accepts autocannon options using subarg syntax:
+
+    <code>clinic deoptigate --autocannon [ / -c 10 -d 10 ] -- node server.js</code>
+
+  The <code>$PORT</code> environment variable contains the detected port. For a
+  custom workload, pass a command with <code>--on-port</code>:
+
+    <code>clinic deoptigate --on-port 'node workload.js' -- node server.js</code>
+
+  Deoptigate detects the first TCP listening port and stops the profiled
+  application when the workload finishes.
+
+  <h1>Flags</h1>
+  -h | --help                Display Help
+  -v | --version             Display Version
+  --collect-only             Collect data without creating a report
+  --visualize-only datapath  Build or rebuild a report from collected data
+  --on-port                  Run a script when the application starts listening
+  --autocannon               Run autocannon against the first listening port
+  --open / --no-open         Enable or suppress opening the report in a browser
+  --dest                     Destination for collected data (default <code>.clinic/</code>)
+  --stop-delay               Delay stopping the application after the workload (milliseconds)
+  --name                     Name the output data directory

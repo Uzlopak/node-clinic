@@ -228,6 +228,46 @@ const result = commist()
       process.exit(1)
     }
   }))
+  .register('deoptigate', catchify(async function (argv) {
+    const version = require('@clinic/deoptigate/package.json').version
+
+    const args = subarg(argv, {
+      alias: {
+        help: 'h',
+        version: 'v'
+      },
+      boolean: [
+        'help',
+        'version',
+        'collect-only',
+        'open'
+      ],
+      string: [
+        'visualize-only',
+        'dest',
+        'stop-delay',
+        'name'
+      ],
+      default: {
+        open: true,
+        dest: DEFAULT_DEST
+      },
+      '--': true
+    })
+
+    if (args.version) {
+      printVersion(version)
+    } else if (args.help) {
+      printHelp('clinic-deoptigate', version)
+    } else if (args['visualize-only'] || args['--'].length > 1) {
+      checkArgs('deoptigate', args, 'clinic-deoptigate', version)
+      await trackTool('deoptigate', args, version)
+      await runTool('deoptigate', require('@clinic/deoptigate'), version, args, { color: 'yellow' })
+    } else {
+      printHelp('clinic-deoptigate', version)
+      process.exit(1)
+    }
+  }))
   .parse(xargv(process.argv.slice(2)))
 
 // not `clinic doctor`, `clinic flame`, and not `clinic bubbleprof`

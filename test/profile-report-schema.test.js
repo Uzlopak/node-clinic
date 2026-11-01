@@ -27,21 +27,76 @@ test('all Clinic adapters produce evidence-backed confidence accepted by the rep
     'clinic-doctor': { issues: { delay: 'performance' } },
     'clinic-bubbleprof': { nodes: [{ nodes: [{ name: 'asyncTask', sources: [{ init: 1, before: [20] }] }] }] },
     'clinic-flame': { nodes: [{ name: 'work', total_time_pct: 20 }] },
-    'clinic-heapprofiler': { total_retained_bytes: 100, data: { name: 'allocation', selfValue: 10 } }
+    'clinic-heapprofiler': { total_retained_bytes: 100, data: { name: 'allocation', selfValue: 10 } },
+    'clinic-deoptigate': {
+      locations: [
+        { kind: 'inline-cache', function_name: 'work', reason: 'read: 1 → 4', count: 10, severity: 2, file: 'src/work.js', line: 13 },
+        { kind: 'deoptimization', function_name: 'work', reason: 'wrong map', count: 3, severity: 3, file: 'src/work.js', line: 12 }
+      ]
+    }
   }
   const expectedConfidence = {
     'clinic-doctor': 'medium',
     'clinic-bubbleprof': 'low',
     'clinic-flame': 'low',
-    'clinic-heapprofiler': 'medium'
+    'clinic-heapprofiler': 'medium',
+    'clinic-deoptigate': 'medium'
   }
   for (const [profiler, profile] of Object.entries(profiles)) {
     const report = analyzeClinicDiagnostics(profiler, profile, { workload: 'fibonacci' })
     t.equal(report.findings[0].confidence, expectedConfidence[profiler], `${profiler} confidence`)
+    if (profiler === 'clinic-deoptigate') {
+      t.equal(report.summary.capabilities.optimization_events, 'supported')
+      t.same(report.summary.optimization_events, { deoptimization_count: 0, inline_cache_transition_count: 0 })
+      t.equal(report.findings[0].severity, 'high', 'ranks higher-severity optimization findings first')
+      t.equal(report.findings[0].observation.values.kind, 'deoptimization')
+    }
     t.type(report.findings[0].evidence.confidence_basis, 'string')
     t.same(validate(report), true, `${profiler} schema: ${JSON.stringify(validate.errors)}`)
     t.same(validateReportSemantics(report), [])
   }
+  t.end()
+})
+
+test('Deoptigate findings rank by severity and summarize repeated reasons', t => {
+  const repeatedReason = Array(18).fill('wrong map').join('; ')
+  const report = analyzeClinicDiagnostics('clinic-deoptigate', {
+    locations: [
+      { kind: 'deoptimization', function_name: 'less severe', reason: 'not a Smi', count: 80, severity: 2, file: 'src/a.js', line: 2 },
+      { kind: 'deoptimization', function_name: 'most severe', reason: repeatedReason, count: 18, severity: 3, file: 'src/b.js', line: 8 }
+    ],
+    deoptimization_count: 98
+  })
+  t.equal(report.findings[0].title, 'most severe deoptimizes at runtime', 'higher severity remains first even with fewer events')
+  t.equal(report.findings[0].observation.values.count, 18, 'reason summarization retains the original event count')
+  t.equal(report.findings[0].observation.values.reason, 'wrong map', 'repeated reason text is deduplicated')
+  t.equal(report.findings[0].confidence, 'high', 'confidence uses event count')
+  t.equal(report.findings[0].severity, 'high')
+  t.same(validate(report), true, JSON.stringify(validate.errors))
+  t.same(validateReportSemantics(report), [])
+  t.end()
+})
+
+test('Deoptigate report handles no events and bounds reason strings', t => {
+  const empty = analyzeClinicDiagnostics('clinic-deoptigate', null)
+  t.same(empty.findings, [])
+  t.equal(empty.summary.confidence, 'unsupported')
+  t.equal(empty.summary.capabilities.optimization_events, 'supported')
+  t.same(empty.summary.optimization_events, { deoptimization_count: 0, inline_cache_transition_count: 0 })
+  t.same(validate(empty), true, JSON.stringify(validate.errors))
+  t.same(validateReportSemantics(empty), [])
+
+  const longReason = 'reason '.repeat(100)
+  const bounded = analyzeClinicDiagnostics('clinic-deoptigate', {
+    locations: [{ kind: 'inline-cache', reason: longReason, count: 2.8, severity: 2, file: 'src/work.js', line: 3 }],
+    inline_cache_transition_count: Infinity
+  })
+  t.equal(bounded.findings[0].observation.values.reason.length, 240)
+  t.equal(bounded.findings[0].observation.values.count, 2, 'event counts are normalized to nonnegative integers')
+  t.equal(bounded.findings[0].confidence, 'medium')
+  t.same(bounded.summary.optimization_events, { deoptimization_count: 0, inline_cache_transition_count: 0 }, 'non-finite summary counts normalize to zero')
+  t.same(validate(bounded), true, JSON.stringify(validate.errors))
+  t.same(validateReportSemantics(bounded), [])
   t.end()
 })
 
@@ -160,7 +215,7 @@ test('workload schema allows each supported Clinic profiler', t => {
     argv: ['/workspace/bench/profile-fibonacci.js', '$' + '{iterations}'],
     cwd: '/workspace',
     env_allowlist: [],
-    profilers: ['clinic-doctor', 'clinic-bubbleprof', 'clinic-flame', 'clinic-heapprofiler'],
+    profilers: ['clinic-doctor', 'clinic-bubbleprof', 'clinic-flame', 'clinic-heapprofiler', 'clinic-deoptigate'],
     limits: { wall_clock_ms: 1000, cpu_ms: 1000, memory_mb: 128, artifact_mb: 10 },
     network: 'disabled',
     input_mounts: [],

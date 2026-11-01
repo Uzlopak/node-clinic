@@ -6,6 +6,7 @@ const path = require('node:path')
 const test = require('tap').test
 const { hashInputPath, openInputMount } = require('../lib/profile-input-mounts')
 const { createSourceRoots } = require('../lib/profile-source-roots')
+const { analyzeClinicDiagnostics } = require('../lib/profile-analyzer')
 
 test('hashes file inputs and opens only digest-matching read-only mounts', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'clinic-input-mount-'))
@@ -69,19 +70,35 @@ test('input mounts reject symlinks, noncanonical targets, and unconfigured roots
 
 test('source roots map declared input mounts without exposing host paths', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'clinic-source-roots-'))
+  const declaredInputRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'clinic-source-input-'))
   t.teardown(() => fs.rmSync(root, { recursive: true, force: true }))
+  t.teardown(() => fs.rmSync(declaredInputRoot, { recursive: true, force: true }))
   fs.mkdirSync(path.join(root, 'bench'))
-  fs.mkdirSync(path.join(root, 'inputs'))
-  fs.writeFileSync(path.join(root, 'inputs', 'fixture.js'), 'module.exports = 1\n')
+  const inputFile = path.join(declaredInputRoot, 'fixture.js')
+  fs.writeFileSync(inputFile, 'module.exports = 1\n')
   const mount = {
-    source_root: 'workspace',
-    source: 'inputs/fixture.js',
+    source_root: 'declared-input',
+    source: 'fixture.js',
     target: '/inputs/corpus/fixture.js',
-    digest: hashInputPath(path.join(root, 'inputs', 'fixture.js'))
+    digest: hashInputPath(inputFile)
   }
-  const roots = createSourceRoots({ cwd: '/workspace/bench', input_mounts: [mount] }, root, null)
+  const roots = createSourceRoots({ cwd: '/workspace/bench', input_mounts: [mount] }, root, declaredInputRoot)
   t.same(roots.map(entry => entry.reportPrefix), ['bench', '', 'inputs/corpus/fixture.js'])
   t.equal(roots[0].root, path.join(root, 'bench'))
-  t.equal(roots[2].root, path.join(root, 'inputs', 'fixture.js'))
+  t.equal(roots[2].root, inputFile)
+
+  const profile = file => analyzeClinicDiagnostics('clinic-deoptigate', {
+    deoptimization_count: 1,
+    inline_cache_transition_count: 0,
+    locations: [{ file, line: 1, kind: 'deoptimization', reason: 'wrong map', count: 1, severity: 2 }]
+  }, { source_roots: roots, workload: 'mounted-input' })
+  t.same(profile('/inputs/corpus/fixture.js').findings[0].location, {
+    file: 'inputs/corpus/fixture.js',
+    line: 1
+  }, 'maps the container-visible single-file input path')
+  t.same(profile(inputFile).findings[0].location, {
+    file: 'inputs/corpus/fixture.js',
+    line: 1
+  }, 'maps the host-visible single-file input path without exposing its location')
   t.end()
 })
