@@ -4,6 +4,7 @@
 const { loadManifest } = require('../lib/profile-manifest')
 const { ProfileMcpServer } = require('../lib/profile-mcp')
 const { serveSdk } = require('../lib/profile-mcp-sdk')
+const { loadPluginMcpTools } = require('../lib/profile-mcp-plugin-tools')
 const runner = require('../lib/profile-runner')
 const { collectClinicProfiler, PROFILERS } = require('../lib/profile-clinic-collector')
 const path = require('node:path')
@@ -126,7 +127,7 @@ async function main () {
       detail: (report, finding, options) => findingDetail(report, finding, { ...options, source_roots: sourceRootsForWorkload(report.run.workload) })
     }
   })
-  await serveSdk(server)
+  await serveSdk(server, loadPluginMcpTools())
 }
 
 function createIsolationMetadata ({ isolationProvider, workload }) {

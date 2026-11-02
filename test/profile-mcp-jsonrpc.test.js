@@ -4,6 +4,7 @@ const test = require('tap').test
 const { PassThrough } = require('stream')
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js')
 const { createSdkServer } = require('../lib/profile-mcp-sdk')
+const { loadPluginMcpTools } = require('../lib/profile-mcp-plugin-tools')
 const { ProfileMcpServer } = require('../lib/profile-mcp')
 
 test('MCP SDK stdio initializes, lists tools, and starts a queued profile run', async t => {
@@ -13,7 +14,7 @@ test('MCP SDK stdio initializes, lists tools, and starts a queued profile run', 
     workloads: { fibonacci: { profilers: ['clinic-flame'], limits: { wall_clock_ms: 1000, memory_mb: 64 } } },
     runner: { start: async () => ({ status: 'queued', runId: 'fake-run' }) }
   })
-  const server = createSdkServer(profileServer)
+  const server = createSdkServer(profileServer, loadPluginMcpTools())
   let buffer = ''
   const pending = new Map()
   let nextId = 0
@@ -58,6 +59,7 @@ test('MCP SDK stdio initializes, lists tools, and starts a queued profile run', 
   const listed = await request('tools/list', {})
   t.ok(listed.result.tools.some(tool => tool.name === 'start_profile_run'))
   t.ok(listed.result.tools.some(tool => tool.name === 'wait_profile_run'))
+  t.ok(listed.result.tools.some(tool => tool.name === 'lookup_deoptimization_reason'))
 
   const started = await request('tools/call', {
     name: 'start_profile_run',

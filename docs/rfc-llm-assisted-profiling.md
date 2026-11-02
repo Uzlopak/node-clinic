@@ -461,6 +461,7 @@ persisted capabilities require an explicit deployment policy and key rotation.
 Proposed tools:
 
 * `list_profile_workloads` — list registered, allowed workloads;
+* Profiler packages can contribute MCP tools by exporting `getMcpTools({ z })`. Clinic calls it to obtain tool definitions, then registers them with its MCP server. Deoptigate contributes `lookup_deoptimization_reason`, which returns the reason code and its meaning;
 * `start_profile_run` — start an asynchronous bounded run;
 * `approve_profile_run` — request explicit human confirmation through MCP
   elicitation for an expensive run;
